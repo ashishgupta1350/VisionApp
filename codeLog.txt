@@ -5,6 +5,12 @@ Created main photoshop.py
 Created and added Dependencies
 
 
+
+
+camera code
+morphological transforms
+
+
 Tasks left
 
 Everything.

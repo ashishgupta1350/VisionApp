@@ -1,5 +1,3 @@
-# --import dependencies for the project
-
 import sys
 import webbrowser
 
@@ -9,14 +7,12 @@ try:
 except:
     print('Install urllib and numpy to use mobile cam else it will now work')
 
-# --Opencv
 try:
     import cv2
 except:
     print('Please install OpenCV first to run this!')
     exit(1)
 
-# --Pyqt
 try:
     from PyQt5 import QtCore
     from PyQt5 import uic
@@ -28,7 +24,6 @@ except:
     print("Please install PyQt5 first to run the interface!")
     exit(1)
 
-# -- additional dependencies
 try:
     import matplotlib.pyplot as plt
 except:
@@ -36,49 +31,136 @@ except:
 
 
 # -- Decorators -- #
+# This code uses decorators to import class functions. To add any function filled file, just add ( +
+# file_name.functions) in it. for that, we need 1) import the file 2) In file, add functions as a variable and
+# functions = ( function_names, .., .., ..), 3) add to below lib function! End:)
+
+import lib
+import morphologicalTransforms
+import encryptionCode
+import paintCode
+import ImageProcessingFilters
+import cameraCode
+import cornerDetection
+
+
+# Global Variables for multi window code
+IPCamURL = ''
+IPCamFlag = False
+codeString = '<b> No code selected yet </b>' \
+             '\n'
+
+
+class textEditor(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.initUI()
+
+    def initUI(self):
+
+        uic.loadUi(r'assets/textEditor.ui', self)
+        self.initializeButtons()
+        self.setWindowTitle('<Code>')
+        self.show()
+        self.textBrowser.setText(codeString)
+        self.textBrowser.setAcceptRichText(True)
+        qtb = QTextBrowser()
+        qtb.setAcceptRichText(True)
+        qtb.setText(codeString)
+
+
+    def initializeButtons(self):
+        self.okButton.clicked.connect(self.okButtonClicked)
+
+    def okButtonClicked(self):
+        self.close()
+
+class IPCamDialog(QMainWindow):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.initUI()
+
+    def initUI(self):
+        self.label1 = QLineEdit('http://192.168.12.160:8080', self)
+        self.label1.move(10, 50)
+        self.label1.setFixedWidth(230)
+        # btn1 = QPushButton("Button 1", self)
+        # btn1.move(30, 50)
+
+        self.btn2 = QPushButton("OK", self)
+        self.btn2.move(250, 50)
+
+        self.btn2.clicked.connect(self.buttonClicked)
+
+        self.statusBar()
+
+        self.setGeometry(300, 300, 360, 100)
+        self.setWindowTitle('Set IP for IPCAM')
+        self.show()
+
+    def buttonClicked(self):
+        global IPCamURL
+        IPCamURL = str(self.label1.text()) # get the url from the source!
+        print('Debug -- in class')
+        IPCamURL = IPCamURL + '/shot.jpg'
+        IPCamFlag = True
+        print(IPCamURL)
+        cv2.destroyAllWindows()
+        self.close()
+
+
+
+@lib.add_functions_as_methods(
+    morphologicalTransforms.functions
+    + encryptionCode.functions
+    + paintCode.functions
+    + ImageProcessingFilters.functions
+    + cameraCode.functions
+    + cornerDetection.functions)
 
 class gui(QMainWindow):
-    # init class
     def __init__(self):
-        super(gui, self).__init__()
-        print(
-            'Welcome to Mini Photoshop. This Gui is designed to edit photos. You can apply filters, detect faces and '
-            'eyes in image, encrypt the data in the image and a lot more!\n\n\n')
-        uic.loadUi(r'assets/miniPhotoshopDesignMainWindow_Paint.ui', self)
-
+        super(gui,self).__init__()
+        print("Welcome to Photoshop.\n You can encrpyt, decrypt data to images.\n You can apply filters to images.\n"
+              "Advanced cut edge algorithms are applied in a snap. \n Video filters can be applied in real time without"
+              "writing the code! The code can be ported with any python application to produce a real time application!"
+              ".")
+        uic.loadUi(r'assets/photoshopDesignUI',self)
         self.initializePaint()
         self.cap = None
         self.globalDrawing = False
         self.processedImage = cv2.imread(r'images/img22.jpg')
         self.originalImage = cv2.imread(r'images/img22.jpg')
         self.displayImage(2)
-        self.filterFlag = int(1)
-        self.lastFilter = 'No Filter Used'
+        self.filterFlag = int(1) # imp
         self.initializeSlider()
         self.colorContainer = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (0, 255, 255), (255, 0, 255), (255, 255, 0),
                                (255, 255, 255), (100, 100, 100), (100, 100, 255), (100, 255, 100), (255, 100, 0),
                                (0, 100, 200)]
+        # For displaying code
         self.codeString = codeString
-        self.mainCodeHelper() # To load main code .py to getCode() button
+        self.mainCodeHelper() # to load main code.py to getCode()
 
-        #IP Cam code
+        # IP cam code
         self.ipCamURL = 'http://192.168.1.5:8080/shot.jpg'
-        self.nd = 0  # this is for example GUI on button clicked
+        self.nd = 0 # The button clicked on gui ( bad name )
         self.ipCamIpButton.clicked.connect(self.loadVideoFromMobile)
-        self.mobileCamButton.clicked.connect(self.loadVideoFromMobileHelper)
-
+        self.mobileCamButton.clicked.connect(self.loadVideoFromMobile)
 
         # Load Save and Reset Buttons
         self.loadButton.clicked.connect(self.loadClicked)
         self.saveButton.clicked.connect(self.saveClicked)
-        self.resetButton.clicked.connect(self.resetClicked)
+        self.resetButton.clicked.connect(self.saveClicked)
 
-        # Filter, Thresholds, Image Processing QCombo Boxes
+        # Update original image( V Important)
+        self.updateOriginal.clicked.connect(self.updateOriginalImage)
+
+        # Filters, thresholds, image processing QCombo box
         self.filters.activated.connect(self.applyFilter)
         self.thresholds.activated.connect(self.applyThresholds)
         self.imageProcessingQComboBox.activated.connect(self.applyImageProcessing)
-
-        self.updateOriginal.clicked.connect(self.updateOriginalImage)
 
         # About and instructions buttons
         self.aboutButton.clicked.connect(self.aboutClicked)
@@ -96,19 +178,14 @@ class gui(QMainWindow):
         self.paintButtonStart.clicked.connect(self.paintButtonStartClicked)
         self.paintButtonStop.clicked.connect(self.paintButtonStopClicked)
 
-        # Face Detection:
-        self.face_cascade = cv2.CascadeClassifier(
-            r'assets/haarcascade_frontalface_default.xml')
-        self.eye_cascade = cv2.CascadeClassifier(
-            r'assets/haarcascade_eye.xml')
-        self.actionFaceDetection.triggered.connect(self.actionFaceDetectionClicked)
-        self.checkWatermarkButton.clicked.connect(self.checkWatermark)
-
         # image encryption and watermark
         self.watermarkImage.clicked.connect(self.waterMarkImageClicked)
         self.encryptData.clicked.connect(self.encryptDataClicked)
         self.decryptData.clicked.connect(self.decryptDataClicked)
+        self.checkWatermarkButton.clicked.connect(self.checkWatermark)
 
+
+        # THIS IS LITERALLY ONE LINE CODE TO CALL GAME
         # play button
         self.playButton.clicked.connect(self.playButtonClicked)
 
@@ -118,16 +195,14 @@ class gui(QMainWindow):
         self.stopVideo = False
 
         # corner Detection buttons
-        self.cornerDetectionQComboBox.activated.connect(self.applyCornerDetection)
 
-        # menu and menu within menu
-        self.createMenuBar()
+        # Depricated code
+        self.cornerDetectionQComboBox.activated.connect(self.applyCornerDetection)
 
         # getCode
         self.getCodeButton.clicked.connect(self.getCodeButtonClicked)
 
-        # Paint2.0 initialization
-        # global vars for paint
+        # Paint 2 initialzied
 
         self.backupImage = None
         self.img = None
@@ -137,55 +212,6 @@ class gui(QMainWindow):
 
         self.paint2Button.clicked.connect(self.paintButtonClicked)
 
-    #Helper functions for getting code in getCode button!
-
-    # End of helper functions
-
-    # play button code
-
-    # play button, links to the chrome dinasour game
-
-    # video load option to allow users to load and apply filters on videos as well
-
-
-    # Rotate Button clicked connect
-
-    # Rotate Code End
-
-    # Slider Code!
-    # slider helper function
-
-    # Slider Clicked(Signal Encoded)
-
-    # Slider Code Clicked End
-
-    # Instructions and About Code
-
-    # Close(1 line)
-
-    # Instructions and About Code
-
-    # Saved Clicked
-
-    # Most important function using QPixMap
-
-    # Update Original Image
-
-    # Reset Image
-
-    # Load Clicked
-
-
-    # ---------------------- Code for Morphological Transforms Was Here Before Refactoring ------------------- #
-
-    # code shifted to file via decorators
-
-    # Morphological code ends
-
-    # IP cam Code for Mobile Imaging
-
-app = QApplication(sys.argv)
-window = gui()
-window.setWindowTitle('Photoshop')
-window.show()
-sys.exit(app.exec_())
+    def getCodeButtonClicked(self):
+        codeEditor = textEditor(self)
+        codeEditor.show()
