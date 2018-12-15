@@ -1,0 +1,10 @@
+Created dummy files
+
+Created main photoshop.py
+
+Created and added Dependencies
+
+
+Tasks left
+
+Everything.
